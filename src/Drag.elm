@@ -4,7 +4,8 @@ module Drag exposing (..)
 import Html exposing (Html, div, span, text)
 import Html.App
 import Html.Attributes exposing (style)
-import Html.Events exposing (onMouseDown, onMouseUp)
+import Html.Events exposing (onWithOptions, onMouseDown, onMouseUp)
+import Json.Decode as Json exposing ((:=))
 import Mouse
 
 
@@ -41,6 +42,13 @@ type alias Coordinate =
   }
 
 
+type alias WheelEvent =
+  { deltaX : Float
+  , deltaY : Float
+  , deltaZ : Float
+  }
+
+
 init : (Model, Cmd Msg)
 init =
   let
@@ -61,6 +69,7 @@ init =
 type Msg
   = StartDrag
   | StopDrag
+  | Wheel WheelEvent
   | Position Int Int
 
 
@@ -109,13 +118,22 @@ update msg model =
               }
           in
             (newModel, Cmd.none)
+    Wheel event ->
+      ({ model | zoomLevel = model.zoomLevel + round event.deltaY }, Cmd.none)
 
 
 view : Model -> Html Msg
 view model =
+  let
+    wheelOptions =
+      { stopPropagation = False
+      , preventDefault = True
+      }
+  in
   div
     [ onMouseDown StartDrag
     , onMouseUp StopDrag
+    , onWithOptions "wheel" wheelOptions (Json.map Wheel <| wheelEventDecoder)
     , style [ ("height", "100vh"), ("width", "100vw") ]
     ]
     [ span
@@ -130,4 +148,15 @@ view model =
     , span
       [ style [ ("position", "absolute"), ("bottom", "0"), ("right", "0") ] ]
       [ text (toString model.bottomRight) ]
+    , span
+      [ style [ ("position", "absolute"), ("top", "0"), ("left", "200px") ] ]
+      [ text (toString model.zoomLevel) ]
     ]
+
+
+wheelEventDecoder : Json.Decoder WheelEvent
+wheelEventDecoder =
+  Json.object3 WheelEvent
+    ("deltaX" := Json.float)
+    ("deltaY" := Json.float)
+    ("deltaZ" := Json.float)
