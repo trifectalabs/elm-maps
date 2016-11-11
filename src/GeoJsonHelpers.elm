@@ -89,7 +89,7 @@ generatePolygonStrings geojson =
         , id = Nothing
         }
       |> .geometry
-      |> Maybe.withDefault (Point ( 0, 0, [] ))
+      |> Maybe.withDefault (Point (0, 0, []))
     coordinates = parsePolygonCoordinates geometry
     pointsToString = (\points ->
       List.map
