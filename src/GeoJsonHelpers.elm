@@ -18,17 +18,6 @@ parseFeatureObject geojson =
       Nothing
 
 
-parseGeometry : GeoJson -> Maybe Geometry
-parseGeometry geojson =
-  case (fst geojson) of
-    Geometry g ->
-      Just g
-    Feature f ->
-      Nothing
-    FeatureCollection fc ->
-      Nothing
-
-
 parseFeatureCollection : GeoJson -> Maybe (List FeatureObject)
 parseFeatureCollection geojson =
   case (fst geojson) of
@@ -39,6 +28,20 @@ parseFeatureCollection geojson =
     FeatureCollection fc ->
       Just fc
 
+
+parseGeometry : GeoJson -> Geometry
+parseGeometry geojson =
+  geojson
+    |> parseFeatureCollection
+    |> Maybe.withDefault []
+    |> List.head
+    |> Maybe.withDefault
+      { geometry = Nothing
+      , properties = Json.Encode.string ""
+      , id = Nothing
+      }
+    |> .geometry
+    |> Maybe.withDefault (Point (0, 0, []))
 
 parsePolygonCoordinates : Geometry -> List (List (Float, Float))
 parsePolygonCoordinates poly =

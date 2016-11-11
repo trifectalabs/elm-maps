@@ -209,22 +209,27 @@ wheelEventDecoder =
     ("deltaY" := Json.float)
     ("deltaZ" := Json.float)
 
-movePolygonPosition : Model -> List (List (Float, Float))
+scalePolygon : Model -> List (List (Float, Float))
+scalePolygon model =
+  let
+    zoom = toFloat model.zoomLevel
+    cursorPos =
+      (toFloat (fst model.mousePosition)
+      , toFloat (snd model.mousePosition)
+      )
+    geometry = parseGeometry model.map
+    scalePoint =
+      (\(p1, p2) -> (p1 * zoom, p2 * zoom))
+  in
+    parsePolygonCoordinates geometry
+      |> List.map (\points -> List.map scalePoint points)
+
+movePolygonPosition : Model -> Model
 movePolygonPosition model =
   let
     xShift = toFloat model.topLeft.lat/10
     yShift = toFloat model.topLeft.lng/10
-    geometry = model.map
-      |> parseFeatureCollection
-      |> Maybe.withDefault []
-      |> List.head
-      |> Maybe.withDefault
-        { geometry = Nothing
-        , properties = Json.Encode.string ""
-        , id = Nothing
-        }
-      |> .geometry
-      |> Maybe.withDefault (Point (0, 0, []))
+    geometry = parseGeometry model.map
     shiftedPolygons = parsePolygonCoordinates geometry
       |> List.map (\points ->
         List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
