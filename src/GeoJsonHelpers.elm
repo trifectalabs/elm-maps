@@ -1,8 +1,10 @@
 module GeoJsonHelpers exposing (..)
 
+
 import String exposing (concat)
 import Json.Encode
-import GeoJson exposing (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject)
+import GeoJson exposing
+  (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject)
 
 
 parseFeatureObject : GeoJson -> Maybe FeatureObject
@@ -10,10 +12,8 @@ parseFeatureObject geojson =
   case (fst geojson) of
     Geometry g ->
       Nothing
-
     Feature f ->
       Just f
-
     FeatureCollection fc ->
       Nothing
 
@@ -23,10 +23,8 @@ parseGeometry geojson =
   case (fst geojson) of
     Geometry g ->
       Just g
-
     Feature f ->
       Nothing
-
     FeatureCollection fc ->
       Nothing
 
@@ -36,61 +34,70 @@ parseFeatureCollection geojson =
   case (fst geojson) of
     Geometry g ->
       Nothing
-
     Feature f ->
       Nothing
-
     FeatureCollection fc ->
       Just fc
 
 
-parsePolygonCoordinates : Geometry -> Maybe (List (List ( Float, Float )))
+parsePolygonCoordinates : Geometry -> List (List (Float, Float))
 parsePolygonCoordinates poly =
   case poly of
     Point p ->
       case p of
-        ( one, two, three ) ->
-          Just [ [ ( one, two ) ] ]
-
+        (lng, lat, _) ->
+          [[(lng, lat)]]
     MultiPoint p ->
-      Just [ (List.map (\( one, two, three ) -> ( one, two )) p) ]
-
+      [ (List.map (\(lng, lat, _) -> (lng, lat)) p) ]
     LineString p ->
-      Just [ (List.map (\( one, two, three ) -> ( one, two )) p) ]
-
+      [ (List.map (\(lng, lat, _) -> (lng, lat)) p) ]
     MultiLineString p ->
-      Just
-        [ (List.head p
-        |> Maybe.withDefault []
-        |> List.map (\( one, two, three ) -> ( one, two )))
-        ]
-
+      let
+        multiLineString = p
+          |> List.head
+          |> Maybe.withDefault []
+          |> List.map (\(lng, lat, _) -> (lng, lat))
+      in
+       [multiLineString]
     Polygon p ->
-      Just [(List.head p
-        |> Maybe.withDefault []
-        |> List.map (\(one, two, three) -> (one, two)))]
-
+      let
+        polygon = p
+          |> List.head
+          |> Maybe.withDefault []
+          |> List.map (\(lng, lat, _) -> (lng, lat))
+      in
+        [polygon]
     MultiPolygon p ->
-      Just
-        (List.map (\polygon ->
+      List.map (\polygon ->
           List.head polygon
             |> Maybe.withDefault []
-            |> List.map (\( one, two, three ) -> ( one, two ) ) ) p )
-
+            |> List.map (\(lng, lat, _) -> (lng, lat))) p
     GeometryCollection p ->
-      Just (List.concat (List.filterMap (\subGeo -> parsePolygonCoordinates subGeo) p))
+      List.concat (List.map (\subGeo -> parsePolygonCoordinates subGeo) p)
 
 
 generatePolygonStrings : GeoJson -> List String
 generatePolygonStrings geojson =
-  parsePolygonCoordinates
-    ((geojson
-    |> parseFeatureCollection
-    |> Maybe.withDefault []
-    |> List.head
-    |> Maybe.withDefault { geometry = Nothing, properties = Json.Encode.string "", id = Nothing }
-    ).geometry
-      |> Maybe.withDefault (Point ( 0, 0, [] )))
-        |> Maybe.withDefault []
-        |> List.map (\points -> List.map (\( p1, p2 ) -> (String.concat [ (toString p1), ",", (toString p2) ])) points)
-        |> List.map (\polygon -> (String.concat (List.intersperse " " polygon)))
+  let
+    geometry = geojson
+      |> parseFeatureCollection
+      |> Maybe.withDefault []
+      |> List.head
+      |> Maybe.withDefault
+        { geometry = Nothing
+        , properties = Json.Encode.string ""
+        , id = Nothing
+        }
+      |> .geometry
+      |> Maybe.withDefault (Point ( 0, 0, [] ))
+    coordinates = parsePolygonCoordinates geometry
+    pointsToString = (\points ->
+      List.map
+        (\( p1, p2 ) -> (String.concat [ (toString p1), ",", (toString p2) ]))
+        points
+    )
+    polygonStrings = coordinates
+      |> List.map pointsToString
+      |> List.map (\polygon -> (String.concat (List.intersperse " " polygon)))
+  in
+    polygonStrings
