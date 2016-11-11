@@ -71,7 +71,7 @@ type alias WheelEvent =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { map = ( (Geometry(Point(0,0,[]) ) ), Nothing )
+    ( { map = ((Geometry (Point(0,0,[]))), Nothing )
       , mousePosition = (0, 0)
       , prevPosition = (0, 0)
       , dragging = False
@@ -177,7 +177,7 @@ view model =
         [ text (toString model.bottomLeft) ]
       , span
         [ style [ ] ]
-        [ (map) ]
+        [ map ]
       , span
         [ style [ ("position", "absolute"), ("bottom", "0"), ("right", "0") ] ]
         [ text (toString model.bottomRight) ]
@@ -209,14 +209,12 @@ wheelEventDecoder =
     ("deltaY" := Json.float)
     ("deltaZ" := Json.float)
 
-movePolygonPosition : Model -> List ( List ( Float, Float ) )
+movePolygonPosition : Model -> List (List (Float, Float))
 movePolygonPosition model =
   let
     xShift = toFloat model.topLeft.lat/10
     yShift = toFloat model.topLeft.lng/10
-  in
-    parsePolygonCoordinates
-      ((model.map
+    geometry = model.map
       |> parseFeatureCollection
       |> Maybe.withDefault []
       |> List.head
@@ -225,17 +223,22 @@ movePolygonPosition model =
         , properties = Json.Encode.string ""
         , id = Nothing
         }
-      ).geometry
-        |> Maybe.withDefault (Point ( 0, 0, [] )))
-        |> List.map (\points ->
-            List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
-
-printPolygonStrings : List ( List (Float, Float)) -> List String
-printPolygonStrings polygons =
-  let
-    polygonString = List.map (\points ->
-    List.map (\( p1, p2 ) ->
-      (String.concat [ (toString p1), ",", (toString p2) ])) points) polygons
+      |> .geometry
+      |> Maybe.withDefault (Point (0, 0, []))
+    shiftedPolygons = parsePolygonCoordinates geometry
+      |> List.map (\points ->
+        List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
   in
-    List.map (\polygon ->
-      (String.concat (List.intersperse " " polygon))) polygonString
+    shiftedPolygons
+
+printPolygonStrings : List (List (Float, Float)) -> List String
+printPolygonStrings polygonList =
+  let
+    stringifyPoint =
+      (\(x, y) -> String.concat [ (toString x), ",", (toString y) ])
+    spaceSeperate =
+      (\polygon -> String.concat (List.intersperse " " polygon))
+  in
+    polygonList
+      |> List.map (\point -> List.map stringifyPoint point)
+      |> List.map spaceSeperate
