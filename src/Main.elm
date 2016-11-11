@@ -15,8 +15,7 @@ import Svg exposing (polygon)
 import Svg.Attributes exposing (version, x, y, viewBox, fill, points)
 import GeoJson exposing
   ( GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject
-  , decoder
-  )
+  , decoder)
 import GeoJsonHelpers exposing (..)
 
 
@@ -67,6 +66,8 @@ type alias WheelEvent =
   , deltaY : Float
   , deltaZ : Float
   }
+
+type alias Shape = List (Float, Float)
 
 
 init : ( Model, Cmd Msg )
@@ -189,7 +190,12 @@ view model =
 generateSvg : Model -> Html Msg
 generateSvg model =
   let
-    polygonStrings = printPolygonStrings (movePolygonPosition model)
+    polygonStrings = model.map
+      |> parseGeometry
+      |> parsePolygonCoordinates
+      |> shiftPolygonPositions model.topLeft
+      |> scalePolygons model.mousePosition model.zoomLevel
+      |> printPolygonStrings
     svgPolys = polygonStrings
       |> List.map (\p -> polygon [ fill "#F0AD00", points p] [])
       |> Svg.svg []
@@ -209,34 +215,34 @@ wheelEventDecoder =
     ("deltaY" := Json.float)
     ("deltaZ" := Json.float)
 
-scalePolygon : Model -> List (List (Float, Float))
-scalePolygon model =
+scalePolygons : (Int, Int) -> Int -> List Shape -> List Shape
+scalePolygons mousePos =
   let
-    zoom = toFloat model.zoomLevel
     cursorPos =
-      (toFloat (fst model.mousePosition)
-      , toFloat (snd model.mousePosition)
+      ( toFloat (fst mousePos)
+      , toFloat (snd mousePos)
       )
-    geometry = parseGeometry model.map
-    scalePoint =
-      (\(p1, p2) -> (p1 * zoom, p2 * zoom))
-  in
-    parsePolygonCoordinates geometry
-      |> List.map (\points -> List.map scalePoint points)
 
-movePolygonPosition : Model -> Model
-movePolygonPosition model =
+    scale = (\(zoom) ->
+      let
+        zoomFactor = toFloat zoom
+        scalePoints = List.map (\(p1, p2) -> (p1 * zoomFactor, p2 * zoomFactor))
+      in
+        List.map (\points -> scalePoints points)
+      )
+  in
+      funToTakeInt
+
+shiftPolygonPositions : Coordinate -> List (Shape) -> List (Shape)
+shiftPolygonPositions anchor =
   let
-    xShift = toFloat model.topLeft.lat/10
-    yShift = toFloat model.topLeft.lng/10
-    geometry = parseGeometry model.map
-    shiftedPolygons = parsePolygonCoordinates geometry
-      |> List.map (\points ->
-        List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
+    xShift = toFloat anchor.lat/10
+    yShift = toFloat anchor.lng/10
+    shiftPoints = List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift))
   in
-    shiftedPolygons
+    List.map (\points -> shiftPoints points)
 
-printPolygonStrings : List (List (Float, Float)) -> List String
+printPolygonStrings : List Shape -> List String
 printPolygonStrings polygonList =
   let
     stringifyPoint =
