@@ -14,7 +14,6 @@ import GeoJson exposing
   , decoder
   )
 import GeoJsonHelpers exposing (..)
-import Debug exposing (log)
 
 
 sampleUrl : String
@@ -57,10 +56,7 @@ update msg model =
       (geoJson, Cmd.none)
 
     FetchFail err ->
-      let
-        error = log "err" err
-      in
-        log "fail" (model, Cmd.none)
+      (model, Cmd.none)
 
 
 -- View
