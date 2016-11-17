@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import String exposing (append)
 import Maybe exposing (andThen)
+import Task exposing (perform)
 import Json.Encode
 import Json.Decode as Json exposing (field, at)
 import Task exposing (perform)
@@ -14,11 +15,9 @@ import Html.Events exposing (onWithOptions, onMouseDown, onMouseUp)
 import Html.Attributes exposing (style)
 import Svg exposing (polygon)
 import Svg.Attributes exposing (version, x, y, viewBox, fill, points)
-import GeoJson exposing
-  ( GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject
-  , decoder
-  )
-import GeoJsonHelpers exposing (..)
+import GeoJsonParsers exposing (..)
+import CanonicalTypes exposing (..)
+import GeoJson exposing (GeoJson, decoder)
 
 
 sampleUrl : String
@@ -46,7 +45,7 @@ subscriptions model =
 -- Model
 
 type alias Model =
-  { map: GeoJson
+  { map: Map
   , mousePosition : (Int, Int)
   , prevPosition : (Int, Int)
   , dragging : Bool
@@ -72,7 +71,7 @@ type alias WheelEvent =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { map = ((Geometry (Point(0,0,[]))), Nothing )
+    ( { map = []
       , mousePosition = (0, 0)
       , prevPosition = (0, 0)
       , dragging = False
@@ -102,7 +101,7 @@ update msg model =
     FetchGeoJson (Err _) ->
       (model, Cmd.none)
     FetchGeoJson (Ok geoJson) ->
-      ({ model | map = geoJson }, Cmd.none)
+      ({ model | map = parseToCanonicalModel geoJson }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -209,31 +208,21 @@ wheelEventDecoder =
     (at ["deltaY"] Json.float)
     (at ["deltaZ"] Json.float)
 
-movePolygonPosition : Model -> List (List (Float, Float))
+movePolygonPosition : Model -> Model
 movePolygonPosition model =
   let
     xShift = toFloat model.topLeft.lat/10
     yShift = toFloat model.topLeft.lng/10
-    geometry = model.map
-      |> parseFeatureCollection
-      |> Maybe.withDefault []
-      |> List.head
-      |> Maybe.withDefault
-        { geometry = Nothing
-        , properties = Json.Encode.string ""
-        , id = Nothing
-        }
-      |> .geometry
-      |> Maybe.withDefault (Point (0, 0, []))
-    shiftedPolygons = parsePolygonCoordinates geometry
+    shiftedPolygons = model.map
       |> List.map (\points ->
-        List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
+         List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
   in
-    shiftedPolygons
+    { model | map = shiftedPolygons}
 
-printPolygonStrings : List (List (Float, Float)) -> List String
-printPolygonStrings polygonList =
+printPolygonStrings : Model -> List String
+printPolygonStrings model =
   let
+    polygonList = model.map
     stringifyPoint =
       (\(x, y) -> String.concat [ (toString x), ",", (toString y) ])
     spaceSeperate =
