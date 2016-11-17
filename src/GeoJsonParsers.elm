@@ -1,10 +1,10 @@
-module GeoJsonHelpers exposing (..)
+module GeoJsonParsers exposing (..)
 
 import Tuple exposing (first, second)
 import String exposing (concat)
 import Json.Encode
 import GeoJson exposing
-  (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject)
+  (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject, decoder)
 
 
 parseFeatureObject : GeoJson -> Maybe FeatureObject
