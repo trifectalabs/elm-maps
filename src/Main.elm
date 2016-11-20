@@ -237,7 +237,7 @@ printPolygonStrings polygonList =
     stringifyPoint =
       (\(x, y) -> String.concat [ (toString x), ",", (toString y) ])
     spaceSeperate =
-      (\polygon -> String.concat (List.intersperse " " polygon))
+      (\polygon -> String.join " " polygon)
   in
     polygonList
       |> List.map (\point -> List.map stringifyPoint point)
