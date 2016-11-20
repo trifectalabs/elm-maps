@@ -1,6 +1,7 @@
 module Tests exposing (..)
 
 
+import Tuple exposing (first, second)
 import GeoJson exposing (..)
 import GeoJsonHelpers exposing (..)
 import Test exposing (..)
@@ -39,8 +40,8 @@ all =
               coordinates1 = (10.23, 88.33)
               coordinates2 = (18.29, 73.02)
               geometry = Polygon([
-                [ (fst coordinates1, snd coordinates1, [ 0, 1, 2 ])
-                , (fst coordinates2, snd coordinates2, [ 0, 1, 2 ])
+                [ (first coordinates1, second coordinates1, [ 0, 1, 2 ])
+                , (first coordinates2, second coordinates2, [ 0, 1, 2 ])
                 ]
               ])
             in
@@ -55,9 +56,9 @@ all =
               coordinates2 = (22.85, 93.11)
               coordinates3 = (74.29, 123.09)
               geometry = MultiPolygon(
-                [ [ [ (fst coordinates1, snd coordinates1, [ 0, 1, 2 ]) ] ]
-                , [ [ (fst coordinates2, snd coordinates2, [ 0, 1, 2 ]) ] ]
-                , [ [ (fst coordinates3, snd coordinates3, [ 0, 1, 2 ]) ] ]
+                [ [ [ (first coordinates1, second coordinates1, [ 0, 1, 2 ]) ] ]
+                , [ [ (first coordinates2, second coordinates2, [ 0, 1, 2 ]) ] ]
+                , [ [ (first coordinates3, second coordinates3, [ 0, 1, 2 ]) ] ]
                 ]
               )
             in
@@ -72,9 +73,9 @@ all =
               coordinates2 = (22.85, 93.11)
               coordinates3 = (74.29, 123.09)
               geometry = Polygon([
-                [ (fst coordinates1, snd coordinates1, [ 0, 1, 2 ])
-                , (fst coordinates2, snd coordinates2, [ 0, 1, 2 ])
-                , (fst coordinates3, snd coordinates3, [ 0, 1, 2 ])
+                [ (first coordinates1, second coordinates1, [ 0, 1, 2 ])
+                , (first coordinates2, second coordinates2, [ 0, 1, 2 ])
+                , (first coordinates3, second coordinates3, [ 0, 1, 2 ])
                 ]
               ])
               featureObject =
@@ -96,11 +97,11 @@ all =
               coordinates2_1 = (74.29, 123.09)
               coordinates2_2 = (34.20, 171.89)
               geometry = MultiPolygon([
-                [ [ (fst coordinates1_1, snd coordinates1_1, [ 0, 1, 2 ])
-                ,   (fst coordinates1_2, snd coordinates1_2, [ 0, 1, 2 ])
+                [ [ (first coordinates1_1, second coordinates1_1, [ 0, 1, 2 ])
+                ,   (first coordinates1_2, second coordinates1_2, [ 0, 1, 2 ])
                 ] ]
-              , [ [ (fst coordinates2_1, snd coordinates2_1, [ 0, 1, 2 ])
-                ,   (fst coordinates2_2, snd coordinates2_2, [ 0, 1, 2 ])
+              , [ [ (first coordinates2_1, second coordinates2_1, [ 0, 1, 2 ])
+                ,   (first coordinates2_2, second coordinates2_2, [ 0, 1, 2 ])
                 ] ]
               ])
               featureObject =

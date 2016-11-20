@@ -1,6 +1,6 @@
 module GeoJsonHelpers exposing (..)
 
-
+import Tuple exposing (first, second)
 import String exposing (concat)
 import Json.Encode
 import GeoJson exposing
@@ -9,7 +9,7 @@ import GeoJson exposing
 
 parseFeatureObject : GeoJson -> Maybe FeatureObject
 parseFeatureObject geojson =
-  case (fst geojson) of
+  case (first geojson) of
     Geometry g ->
       Nothing
     Feature f ->
@@ -20,7 +20,7 @@ parseFeatureObject geojson =
 
 parseGeometry : GeoJson -> Maybe Geometry
 parseGeometry geojson =
-  case (fst geojson) of
+  case (first geojson) of
     Geometry g ->
       Just g
     Feature f ->
@@ -31,7 +31,7 @@ parseGeometry geojson =
 
 parseFeatureCollection : GeoJson -> Maybe (List FeatureObject)
 parseFeatureCollection geojson =
-  case (fst geojson) of
+  case (first geojson) of
     Geometry g ->
       Nothing
     Feature f ->

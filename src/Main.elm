@@ -3,11 +3,12 @@ module Main exposing (..)
 import String exposing (append)
 import Maybe exposing (andThen)
 import Json.Encode
-import Json.Decode as Json exposing ((:=))
+import Json.Decode as Json exposing (field, at)
 import Task exposing (perform)
+import Tuple exposing (first, second)
 import Http
 import Mouse
-import Html.App as App
+import Html
 import Html exposing (Html, div, span, text)
 import Html.Events exposing (onWithOptions, onMouseDown, onMouseUp)
 import Html.Attributes exposing (style)
@@ -25,9 +26,9 @@ sampleUrl =
     "http://localhost:3000/sample.json"
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    App.program
+    Html.program
         { init = init
         , view = view
         , update = update
@@ -88,8 +89,7 @@ init =
 -- Update
 
 type Msg
-    = FetchSuccess GeoJson
-    | FetchFail Http.Error
+    = FetchGeoJson (Result Http.Error GeoJson)
     | StartDrag
     | StopDrag
     | Wheel WheelEvent
@@ -99,10 +99,10 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    FetchSuccess geoJson ->
-      ({ model | map = geoJson }, Cmd.none)
-    FetchFail err ->
+    FetchGeoJson (Err _) ->
       (model, Cmd.none)
+    FetchGeoJson (Ok geoJson) ->
+      ({ model | map = geoJson }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -120,8 +120,8 @@ update msg model =
             (newModel, Cmd.none)
         True ->
           let
-            moveLat = fst model.mousePosition - fst model.prevPosition
-            moveLng = snd model.prevPosition - snd model.mousePosition
+            moveLat = first model.mousePosition - first model.prevPosition
+            moveLng = second model.prevPosition - second model.mousePosition
             newModel =
               { model
               | mousePosition = (x, y)
@@ -200,14 +200,14 @@ generateSvg model =
 
 fetchPerform : String -> Cmd Msg
 fetchPerform url =
-  Task.perform FetchFail FetchSuccess (Http.get decoder url)
+  Http.send FetchGeoJson <| Http.get url decoder
 
 wheelEventDecoder : Json.Decoder WheelEvent
 wheelEventDecoder =
-  Json.object3 WheelEvent
-    ("deltaX" := Json.float)
-    ("deltaY" := Json.float)
-    ("deltaZ" := Json.float)
+  Json.map3 WheelEvent
+    (at ["deltaX"] Json.float)
+    (at ["deltaY"] Json.float)
+    (at ["deltaZ"] Json.float)
 
 movePolygonPosition : Model -> List (List (Float, Float))
 movePolygonPosition model =
@@ -237,7 +237,7 @@ printPolygonStrings polygonList =
     stringifyPoint =
       (\(x, y) -> String.concat [ (toString x), ",", (toString y) ])
     spaceSeperate =
-      (\polygon -> String.concat (List.intersperse " " polygon))
+      (\polygon -> String.join " " polygon)
   in
     polygonList
       |> List.map (\point -> List.map stringifyPoint point)
