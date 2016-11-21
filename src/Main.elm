@@ -18,6 +18,7 @@ import Svg.Attributes exposing (version, x, y, viewBox, fill, points)
 import GeoJsonParsers exposing (..)
 import CanonicalTypes exposing (..)
 import GeoJson exposing (GeoJson, decoder)
+import Debug exposing (log)
 
 
 sampleUrl : String
@@ -53,7 +54,7 @@ type alias Model =
   , topRight : Coordinate
   , bottomLeft : Coordinate
   , bottomRight : Coordinate
-  , zoomLevel : Int
+  , zoomLevel : Float
   }
 
 type alias Coordinate =
@@ -79,7 +80,7 @@ init =
       , topRight = { lat = 10, lng = 0 }
       , bottomLeft = { lat = 0, lng = 10 }
       , bottomRight = { lat = 10, lng = 10 }
-      , zoomLevel = 0
+      , zoomLevel = 1
       }
     , fetchPerform sampleUrl
     )
@@ -145,7 +146,10 @@ update msg model =
           in
             (newModel, Cmd.none)
     Wheel event ->
-      ({ model | zoomLevel = model.zoomLevel + round event.deltaY }, Cmd.none)
+      let
+        updatedModel = zoom (normalizeZoom model (negate event.deltaY)) (negate event.deltaY)
+      in
+        (updatedModel, Cmd.none)
 
 
 -- View
@@ -169,6 +173,9 @@ view model =
         [ style [ ("position", "absolute"), ("top", "0"), ("left", "0") ] ]
         [ text (toString model.topLeft) ]
       , span
+        [ style [ ("position", "absolute"), ("top", "0"), ("left", "200px") ] ]
+        [ text <| String.concat [ "Mouse Position: ", (toString model.mousePosition) ] ]
+      , span
         [ style [ ("position", "absolute"), ("top", "0"), ("right", "0") ] ]
         [ text (toString model.topRight) ]
       , span
@@ -181,9 +188,45 @@ view model =
         [ style [ ("position", "absolute"), ("bottom", "0"), ("right", "0") ] ]
         [ text (toString model.bottomRight) ]
       , span
-        [ style [ ("position", "absolute"), ("top", "0"), ("left", "200px") ] ]
-        [ text (toString model.zoomLevel) ]
+        [ style [ ("position", "absolute"), ("top", "0"), ("left", "400px") ] ]
+        [ text <| String.concat [ "Zoom level:", (toString model.zoomLevel) ] ]
       ]
+
+zoom : Model -> Float -> Model
+zoom model delta =
+  let
+    zoomLevel = model.zoomLevel
+    mousePos = model.mousePosition
+    latDistanceFromMouse = (\lat -> toFloat <| abs <| round lat - (first mousePos))
+    lngDistanceFromMouse = (\lng -> toFloat <| abs <| round lng - (second mousePos))
+    shiftLat = (\lat ->
+      if (delta < 0) then
+        if (lat < 0) then
+          lat - negate ( (zoomLevel - 1) * latDistanceFromMouse lat )
+        else
+          lat - (zoomLevel - 1) * latDistanceFromMouse lat
+      else
+        if (lat < 0) then
+          lat + negate ( (zoomLevel - 1) * latDistanceFromMouse lat )
+        else
+          lat + (zoomLevel - 1) * latDistanceFromMouse lat
+    )
+    shiftLng = (\lng ->
+      if (delta < 0) then
+        lng - (zoomLevel - 1) * lngDistanceFromMouse lng
+      else
+        lng + (zoomLevel - 1) * lngDistanceFromMouse lng
+    )
+
+
+    zoomedMap = model.map
+      |> List.map (\polygonPoints ->
+           List.map (\(lat, lng) -> ( shiftLat lat , shiftLng lng)
+         ) polygonPoints )
+  in
+    { model | map = zoomedMap }
+
+
 
 generateSvg : Model -> Html Msg
 generateSvg model =
@@ -218,6 +261,25 @@ movePolygonPosition model =
          List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
   in
     { model | map = shiftedPolygons}
+
+normalizeZoom : Model -> Float -> Model
+normalizeZoom model zoom =
+  let
+    scaledZoom = zoom/1000
+    normalizedZoom =
+      if (model.zoomLevel + scaledZoom < 1) then
+        1
+      else
+        model.zoomLevel + scaledZoom
+  in
+    { model | zoomLevel = normalizedZoom }
+
+isNegative : Float -> Bool
+isNegative num =
+  if (num < 0) then
+    True
+  else
+    False
 
 printPolygonStrings : Model -> List String
 printPolygonStrings model =
