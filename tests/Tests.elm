@@ -16,15 +16,15 @@ all =
       [ test "can parse geometry from GeoJson" <|
           \() ->
             let
-              testGeoJson = (Geometry (Point (1,3,[])), Nothing)
+              testGeoJson = (Geometry (Point (1,3,0)), Nothing)
             in
-              Expect.equal (parseGeometry testGeoJson) (Just (Point (1, 3, [])))
+              Expect.equal (parseGeometry testGeoJson) (Just (Point (1, 3, 0)))
 
       , test "can parse feature collection from GeoJson" <|
           \() ->
             let
               featureObject =
-                { geometry = Just (Point(1, 3, []))
+                { geometry = Just (Point(1, 3, 0))
                 , properties = Json.Encode.string ""
                 , id = Nothing
                 }
@@ -40,8 +40,8 @@ all =
               coordinates1 = (10.23, 88.33)
               coordinates2 = (18.29, 73.02)
               geometry = Polygon([
-                [ (first coordinates1, second coordinates1, [ 0, 1, 2 ])
-                , (first coordinates2, second coordinates2, [ 0, 1, 2 ])
+                [ (first coordinates1, second coordinates1, 3)
+                , (first coordinates2, second coordinates2, 0)
                 ]
               ])
             in
@@ -56,9 +56,9 @@ all =
               coordinates2 = (22.85, 93.11)
               coordinates3 = (74.29, 123.09)
               geometry = MultiPolygon(
-                [ [ [ (first coordinates1, second coordinates1, [ 0, 1, 2 ]) ] ]
-                , [ [ (first coordinates2, second coordinates2, [ 0, 1, 2 ]) ] ]
-                , [ [ (first coordinates3, second coordinates3, [ 0, 1, 2 ]) ] ]
+                [ [ [ (first coordinates1, second coordinates1, 0) ] ]
+                , [ [ (first coordinates2, second coordinates2, 0) ] ]
+                , [ [ (first coordinates3, second coordinates3, 0) ] ]
                 ]
               )
             in
@@ -73,9 +73,9 @@ all =
               coordinates2 = (22.85, 93.11)
               coordinates3 = (74.29, 123.09)
               geometry = Polygon([
-                [ (first coordinates1, second coordinates1, [ 0, 1, 2 ])
-                , (first coordinates2, second coordinates2, [ 0, 1, 2 ])
-                , (first coordinates3, second coordinates3, [ 0, 1, 2 ])
+                [ (first coordinates1, second coordinates1, 0)
+                , (first coordinates2, second coordinates2, 0)
+                , (first coordinates3, second coordinates3, 0)
                 ]
               ])
               featureObject =
@@ -97,11 +97,11 @@ all =
               coordinates2_1 = (74.29, 123.09)
               coordinates2_2 = (34.20, 171.89)
               geometry = MultiPolygon([
-                [ [ (first coordinates1_1, second coordinates1_1, [ 0, 1, 2 ])
-                ,   (first coordinates1_2, second coordinates1_2, [ 0, 1, 2 ])
+                [ [ (first coordinates1_1, second coordinates1_1, 0)
+                ,   (first coordinates1_2, second coordinates1_2, 0)
                 ] ]
-              , [ [ (first coordinates2_1, second coordinates2_1, [ 0, 1, 2 ])
-                ,   (first coordinates2_2, second coordinates2_2, [ 0, 1, 2 ])
+              , [ [ (first coordinates2_1, second coordinates2_1, 0)
+                ,   (first coordinates2_2, second coordinates2_2, 0)
                 ] ]
               ])
               featureObject =
