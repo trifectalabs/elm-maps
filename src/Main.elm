@@ -72,7 +72,7 @@ type alias WheelEvent =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { map = ((Geometry (Point(0,0,[]))), Nothing )
+    ( { map = ((Geometry (Point(0,0,0))), Nothing )
       , mousePosition = (0, 0)
       , prevPosition = (0, 0)
       , dragging = False
@@ -224,7 +224,7 @@ movePolygonPosition model =
         , id = Nothing
         }
       |> .geometry
-      |> Maybe.withDefault (Point (0, 0, []))
+      |> Maybe.withDefault (Point (0, 0, 0))
     shiftedPolygons = parsePolygonCoordinates geometry
       |> List.map (\points ->
         List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
