@@ -3,7 +3,7 @@ module Tests exposing (..)
 
 import Tuple exposing (first, second)
 import GeoJson exposing (..)
-import GeoJsonHelpers exposing (..)
+import GeoJsonParsers exposing (..)
 import Test exposing (..)
 import Json.Encode
 import Expect

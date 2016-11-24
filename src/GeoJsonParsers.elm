@@ -1,10 +1,10 @@
-module GeoJsonHelpers exposing (..)
+module GeoJsonParsers exposing (..)
 
 import Tuple exposing (first, second)
 import String exposing (concat)
 import Json.Encode
 import GeoJson exposing
-  (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject)
+  (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject, decoder)
 
 
 parseFeatureObject : GeoJson -> Maybe FeatureObject
@@ -101,3 +101,19 @@ generatePolygonStrings geojson =
       |> List.map (\polygon -> (String.concat (List.intersperse " " polygon)))
   in
     polygonStrings
+
+parseToCanonicalModel : GeoJson -> List (List (Float, Float))
+parseToCanonicalModel geojson =
+  geojson
+      |> parseFeatureCollection
+      |> Maybe.withDefault []
+      |> List.head
+      |> Maybe.withDefault
+        { geometry = Nothing
+        , properties = Json.Encode.string ""
+        , id = Nothing
+        }
+      |> .geometry
+      |> Maybe.withDefault (Point (0, 0, []))
+      |> parsePolygonCoordinates
+
