@@ -3,6 +3,7 @@ module GeoJsonParsers exposing (..)
 import Tuple exposing (first, second)
 import String exposing (concat)
 import Json.Encode
+import CanonicalTypes exposing (Tile)
 import GeoJson exposing
   (GeoJson, GeoJsonObject(..), Geometry(..), FeatureObject, decoder)
 
@@ -102,8 +103,8 @@ generatePolygonStrings geojson =
   in
     polygonStrings
 
-parseToCanonicalModel : GeoJson -> List (List (Float, Float))
-parseToCanonicalModel geojson =
+parseToTile : GeoJson -> Tile
+parseToTile geojson =
   geojson
       |> parseFeatureCollection
       |> Maybe.withDefault []

@@ -101,7 +101,7 @@ update msg model =
     FetchGeoJson (Err _) ->
       (model, Cmd.none)
     FetchGeoJson (Ok geoJson) ->
-      ({ model | map = parseToCanonicalModel geoJson }, Cmd.none)
+      ({ model | map = parseToTile geoJson }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -213,21 +213,46 @@ movePolygonPosition model =
   let
     xShift = toFloat model.topLeft.lat/10
     yShift = toFloat model.topLeft.lng/10
-    shiftedPolygons = model.map
-      |> List.map (\points ->
-         List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points)
-  in
-    { model | map = shiftedPolygons}
+    tiles = model.map
+      |> List.map (\polygon ->
+           List.map (\points ->
+             List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points
+           ) polygon
+         )
+   in
+    { model | map = tiles}
 
 printPolygonStrings : Model -> List String
 printPolygonStrings model =
   let
-    polygonList = model.map
+    tiles = model.map
     stringifyPoint =
       (\(x, y) -> String.concat [ (toString x), ",", (toString y) ])
     spaceSeperate =
       (\polygon -> String.join " " polygon)
   in
-    polygonList
-      |> List.map (\point -> List.map stringifyPoint point)
-      |> List.map spaceSeperate
+    tiles
+      |> List.map (\polygons ->
+        List.map (\point -> List.map stringifyPoint point) polygons
+          |> List.map spaceSeperate
+      )
+      |> List.concat
+
+fetchTile : (Float, Float) -> Tile
+fetchTile (lat, lng) =
+  let
+    url = ""
+  in
+    fetchPerform url
+
+fetchViewableTiles : Model -> List Tile
+fetchViewableTiles model =
+  let
+    zoomLevel = model.zoomLevel
+    max = calculateMaxRowCol zoomLevel
+  in
+
+calculateMaxRowCol : Int -> Int
+calculateMaxRowCol zoomLevel =
+  if (zoomLevel == 0) then 0
+  else (calculateMaxRowCol <| zoomLevel - 1) * 2 + 1

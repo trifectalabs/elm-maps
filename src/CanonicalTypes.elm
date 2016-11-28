@@ -2,7 +2,9 @@ module CanonicalTypes exposing (..)
 
 
 -- Map will change with the development of this library
-type alias Map = MultiPolygon
+type alias Map = List Tile
+
+type alias Tile = MultiPolygon
 
 
 -- (longitude, latitude)
