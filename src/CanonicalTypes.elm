@@ -4,10 +4,7 @@ module CanonicalTypes exposing (..)
 -- Map will change with the development of this library
 type alias Map = List Tile
 
-type alias Tile =
-  { index : Int
-  , data : MultiPolygon
-  }
+type alias Tile = MultiPolygon
 
 -- (longitude, latitude)
 type alias Position = (Float, Float)

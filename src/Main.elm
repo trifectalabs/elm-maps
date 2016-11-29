@@ -25,7 +25,7 @@ baseUrl =
 
 initUrl : String
 initUrl =
-    String.concat [baseUrl, "/3/2/3.json"]
+    String.concat [baseUrl, "/4/4/6.json"]
 
 
 main : Program Never Model Msg
@@ -60,8 +60,8 @@ type alias Model =
   }
 
 type alias Coordinate =
-  { lat : Int
-  , lng : Int
+  { lng : Int
+  , lat : Int
   }
 
 
@@ -78,10 +78,10 @@ init =
       , mousePosition = (0, 0)
       , prevPosition = (0, 0)
       , dragging = False
-      , topLeft = { lat = 0, lng = 0 }
-      , topRight = { lat = 10, lng = 0 }
-      , bottomLeft = { lat = 0, lng = 10 }
-      , bottomRight = { lat = 10, lng = 10 }
+      , topLeft = { lng = 0, lat = 0 }
+      , topRight = { lng = 10, lat = 0 }
+      , bottomLeft = { lng = 0, lat = 10 }
+      , bottomRight = { lng = 10, lat = 10 }
       , zoomLevel = 0
       }
     , fetchPerform initUrl
@@ -105,11 +105,11 @@ update msg model =
     FetchGeoJson (Err _) ->
       (model, Cmd.none)
     FetchGeoJson (Ok geoJson) ->
-      ({ model | map = [parseToTile (1, geoJson) ] }, Cmd.none)
+      ({ model | map = [parseToTile geoJson] }, Cmd.none)
     NewTile (Err _) ->
       (model, Cmd.none)
     NewTile (Ok geoJson) ->
-      ({ model | map = [parseToTile (1, geoJson)] }, Cmd.none)
+      ({ model | map = [parseToTile geoJson] }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -128,27 +128,27 @@ update msg model =
         True ->
           let
             newTiles = fetchViewableTiles model
-            moveLat = first model.mousePosition - first model.prevPosition
-            moveLng = second model.prevPosition - second model.mousePosition
+            moveLng = first model.prevPosition - first model.mousePosition
+            moveLat = second model.mousePosition - second model.prevPosition
             newModel =
               { model
               | mousePosition = (x, y)
               , prevPosition = model.mousePosition
               , topLeft =
-                { lat = model.topLeft.lat + moveLat
-                , lng = model.topLeft.lng - moveLng
+                { lng = model.topLeft.lng - moveLng
+                , lat = model.topLeft.lat + moveLat
                 }
               , topRight =
-                { lat = model.topRight.lat + moveLat
-                , lng = model.topRight.lng - moveLng
+                { lng = model.topRight.lng - moveLng
+                , lat = model.topRight.lat + moveLat
                 }
               , bottomLeft =
-                { lat = model.bottomLeft.lat + moveLat
-                , lng = model.bottomLeft.lng - moveLng
+                { lng = model.bottomLeft.lng - moveLng
+                , lat = model.bottomLeft.lat + moveLat
                 }
               , bottomRight =
-                { lat = model.bottomRight.lat + moveLat
-                , lng = model.bottomRight.lng - moveLng
+                { lng = model.bottomRight.lng - moveLng
+                , lat = model.bottomRight.lat + moveLat
                 }
               }
           in
@@ -223,13 +223,13 @@ wheelEventDecoder =
 movePolygonPosition : Model -> Model
 movePolygonPosition model =
   let
-    xShift = toFloat model.topLeft.lat/10
-    yShift = toFloat model.topLeft.lng/10
+    xShift = toFloat model.topLeft.lng/10
+    yShift = toFloat model.topLeft.lat/10
     tiles = model.map
       |> List.map (\tile ->
            List.map (\points ->
              List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points
-           ) polygon
+           ) tile
          )
    in
     { model | map = tiles}
@@ -251,7 +251,7 @@ printPolygonStrings model =
       |> List.concat
 
 fetchTile : (Float, Float) -> Cmd Msg
-fetchTile (lat, lng) =
+fetchTile (lng, lat) =
   let
     url = ""
   in
