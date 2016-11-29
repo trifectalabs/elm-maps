@@ -103,9 +103,10 @@ generatePolygonStrings geojson =
   in
     polygonStrings
 
-parseToTile : GeoJson -> Tile
-parseToTile geojson =
-  geojson
+parseToTile : (Int, GeoJson) -> Tile
+parseToTile (index, geojson) =
+  let
+    data = geojson
       |> parseFeatureCollection
       |> Maybe.withDefault []
       |> List.head
@@ -117,3 +118,5 @@ parseToTile geojson =
       |> .geometry
       |> Maybe.withDefault (Point (0, 0, 0))
       |> parsePolygonCoordinates
+  in
+    { index = index, data = data }

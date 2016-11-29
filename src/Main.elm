@@ -19,10 +19,13 @@ import GeoJsonParsers exposing (..)
 import CanonicalTypes exposing (..)
 import GeoJson exposing (GeoJson, decoder)
 
+baseUrl: String
+baseUrl =
+  "http://localhost:3000/osm"
 
-sampleUrl : String
-sampleUrl =
-    "http://localhost:3000/sample.json"
+initUrl : String
+initUrl =
+    String.concat [baseUrl, "/0/0/0.json"]
 
 
 main : Program Never Model Msg
@@ -81,7 +84,7 @@ init =
       , bottomRight = { lat = 10, lng = 10 }
       , zoomLevel = 0
       }
-    , fetchPerform sampleUrl
+    , fetchPerform initUrl
     )
 
 
@@ -89,6 +92,7 @@ init =
 
 type Msg
     = FetchGeoJson (Result Http.Error GeoJson)
+    | NewTile (Result Http.Error GeoJson)
     | StartDrag
     | StopDrag
     | Wheel WheelEvent
@@ -101,7 +105,11 @@ update msg model =
     FetchGeoJson (Err _) ->
       (model, Cmd.none)
     FetchGeoJson (Ok geoJson) ->
-      ({ model | map = parseToTile geoJson }, Cmd.none)
+      ({ model | map = [parseToTile geoJson] }, Cmd.none)
+    NewTile (Err _) ->
+      (model, Cmd.none)
+    NewTile (Ok geoJson) ->
+      ({ model | map = [parseToTile geoJson] }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -119,6 +127,7 @@ update msg model =
             (newModel, Cmd.none)
         True ->
           let
+            newTiles = fetchViewableTiles model
             moveLat = first model.mousePosition - first model.prevPosition
             moveLng = second model.prevPosition - second model.mousePosition
             newModel =
@@ -145,7 +154,10 @@ update msg model =
           in
             (newModel, Cmd.none)
     Wheel event ->
-      ({ model | zoomLevel = model.zoomLevel + round event.deltaY }, Cmd.none)
+      let
+        newTiles = fetchViewableTiles model
+      in
+        ({ model | zoomLevel = model.zoomLevel + round event.deltaY }, Cmd.none)
 
 
 -- View
@@ -238,19 +250,26 @@ printPolygonStrings model =
       )
       |> List.concat
 
-fetchTile : (Float, Float) -> Tile
+fetchTile : (Float, Float) -> Cmd Msg
 fetchTile (lat, lng) =
   let
     url = ""
   in
-    fetchPerform url
+    Http.send NewTile <| (Http.get url decoder)
 
 fetchViewableTiles : Model -> List Tile
 fetchViewableTiles model =
   let
     zoomLevel = model.zoomLevel
     max = calculateMaxRowCol zoomLevel
+    path = String.concat [toString zoomLevel, toString max]
   in
+    if (False) then
+      Debug.log "would fetch"
+      model.map
+    else
+      Debug.log path
+      model.map
 
 calculateMaxRowCol : Int -> Int
 calculateMaxRowCol zoomLevel =
