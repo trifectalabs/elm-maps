@@ -21,11 +21,11 @@ import GeoJson exposing (GeoJson, decoder)
 
 baseUrl: String
 baseUrl =
-  "http://localhost:3000/osm"
+  "http://localhost:8080/osm"
 
 initUrl : String
 initUrl =
-    String.concat [baseUrl, "/0/0/0.json"]
+    String.concat [baseUrl, "/3/2/3.json"]
 
 
 main : Program Never Model Msg
