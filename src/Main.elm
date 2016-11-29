@@ -105,11 +105,11 @@ update msg model =
     FetchGeoJson (Err _) ->
       (model, Cmd.none)
     FetchGeoJson (Ok geoJson) ->
-      ({ model | map = [parseToTile geoJson] }, Cmd.none)
+      ({ model | map = [parseToTile (1, geoJson) ] }, Cmd.none)
     NewTile (Err _) ->
       (model, Cmd.none)
     NewTile (Ok geoJson) ->
-      ({ model | map = [parseToTile geoJson] }, Cmd.none)
+      ({ model | map = [parseToTile (1, geoJson)] }, Cmd.none)
     StartDrag ->
       ({ model | dragging = True }, Cmd.none)
     StopDrag ->
@@ -226,7 +226,7 @@ movePolygonPosition model =
     xShift = toFloat model.topLeft.lat/10
     yShift = toFloat model.topLeft.lng/10
     tiles = model.map
-      |> List.map (\polygon ->
+      |> List.map (\tile ->
            List.map (\points ->
              List.map (\( p1, p2 ) -> (p1 + xShift, p2+yShift)) points
            ) polygon
