@@ -25,7 +25,8 @@ baseUrl =
 
 initUrl : String
 initUrl =
-    String.concat [baseUrl, "/4/4/6.json"]
+--  String.concat [baseUrl, "/6/17/27.json"]    -- Florida/Cuba
+  String.concat [baseUrl, "/1/0/0.json"]      -- North America
 
 
 main : Program Never Model Msg
@@ -206,7 +207,7 @@ generateSvg model =
       |> Svg.svg []
   in
     Svg.svg
-      [ version "1.1" , x "0" , y "0" , viewBox "0 0 180 180" ] [ svgPolys ]
+      [ version "1.1" , x "0" , y "0" , viewBox "0 0 180 180" , style [ ("background", "#a5c7ff") ] ] [ svgPolys ]
 
 
 fetchPerform : String -> Cmd Msg

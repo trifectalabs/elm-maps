@@ -65,14 +65,14 @@ parsePolygonCoordinates poly =
         polygon = p
           |> List.head
           |> Maybe.withDefault []
-          |> List.map (\(lng, lat, _) -> (lng, lat))
+          |> List.map (\(lng, lat, _) -> (abs lng, abs lat))
       in
         [polygon]
     MultiPolygon p ->
       List.map (\polygon ->
           List.head polygon
             |> Maybe.withDefault []
-            |> List.map (\(lng, lat, _) -> (lng, lat))) p
+            |> List.map (\(lng, lat, _) -> (abs lng, abs lat))) p
     GeometryCollection p ->
       List.concat (List.map (\subGeo -> parsePolygonCoordinates subGeo) p)
 
