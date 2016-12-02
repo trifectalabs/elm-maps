@@ -1,17 +1,13 @@
 module Main exposing (..)
 
 import String exposing (append)
-import Maybe exposing (andThen)
-import Task exposing (perform)
-import Json.Encode
-import Json.Decode as Json exposing (field, at)
-import Task exposing (perform)
+import Json.Decode as Decode exposing (field, at)
 import Tuple exposing (first, second)
 import Http
 import Mouse
 import Html
 import Html exposing (Html, div, span, text)
-import Html.Events exposing (onWithOptions, onMouseDown, onMouseUp)
+import Html.Events exposing (onWithOptions, onMouseDown, onMouseUp, on)
 import Html.Attributes exposing (style)
 import Svg exposing (polygon)
 import Svg.Attributes exposing (version, x, y, viewBox, fill, points)
@@ -43,7 +39,11 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Mouse.moves (\{x, y} -> Position x y)
+  case model.dragging of
+    True ->
+      Mouse.moves (\{x, y} -> Pan x y)
+    False ->
+      Sub.none
 
 
 -- Model
@@ -94,10 +94,10 @@ init =
 type Msg
     = FetchGeoJson (Result Http.Error GeoJson)
     | NewTile (Result Http.Error GeoJson)
-    | StartDrag
+    | StartDrag (Int, Int)
     | StopDrag
     | Wheel WheelEvent
-    | Position Int Int
+    | Pan Int Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -111,49 +111,38 @@ update msg model =
       (model, Cmd.none)
     NewTile (Ok geoJson) ->
       ({ model | map = [parseToTile geoJson] }, Cmd.none)
-    StartDrag ->
-      ({ model | dragging = True }, Cmd.none)
+    StartDrag pos ->
+      ({ model | dragging = True, mousePosition = pos }, Cmd.none)
     StopDrag ->
       ({ model | dragging = False }, Cmd.none)
-    Position x y ->
-      case model.dragging of
-        False ->
-          let
-            newModel =
-              { model
-              | mousePosition = (x, y)
-              , prevPosition = model.mousePosition
-              }
-          in
-            (newModel, Cmd.none)
-        True ->
-          let
-            newTiles = fetchViewableTiles model
-            moveLng = first model.prevPosition - first model.mousePosition
-            moveLat = second model.mousePosition - second model.prevPosition
-            newModel =
-              { model
-              | mousePosition = (x, y)
-              , prevPosition = model.mousePosition
-              , topLeft =
-                { lng = model.topLeft.lng - moveLng
-                , lat = model.topLeft.lat + moveLat
-                }
-              , topRight =
-                { lng = model.topRight.lng - moveLng
-                , lat = model.topRight.lat + moveLat
-                }
-              , bottomLeft =
-                { lng = model.bottomLeft.lng - moveLng
-                , lat = model.bottomLeft.lat + moveLat
-                }
-              , bottomRight =
-                { lng = model.bottomRight.lng - moveLng
-                , lat = model.bottomRight.lat + moveLat
-                }
-              }
-          in
-            (newModel, Cmd.none)
+    Pan x y ->
+      let
+        newTiles = fetchViewableTiles model
+        moveLng = first model.prevPosition - first model.mousePosition
+        moveLat = second model.mousePosition - second model.prevPosition
+        newModel =
+          { model
+          | mousePosition = (x, y)
+          , prevPosition = model.mousePosition
+          , topLeft =
+            { lng = model.topLeft.lng - moveLng
+            , lat = model.topLeft.lat + moveLat
+            }
+          , topRight =
+            { lng = model.topRight.lng - moveLng
+            , lat = model.topRight.lat + moveLat
+            }
+          , bottomLeft =
+            { lng = model.bottomLeft.lng - moveLng
+            , lat = model.bottomLeft.lat + moveLat
+            }
+          , bottomRight =
+            { lng = model.bottomRight.lng - moveLng
+            , lat = model.bottomRight.lat + moveLat
+            }
+          }
+      in
+        (newModel, Cmd.none)
     Wheel event ->
       let
         newTiles = fetchViewableTiles model
@@ -162,6 +151,13 @@ update msg model =
 
 
 -- View
+
+
+onMouseDownPos : ((Int, Int) -> msg) -> Html.Attribute msg
+onMouseDownPos message =
+  on "mousedown" decodeClickLocation
+    |> Html.Attributes.map message
+
 
 view : Model -> Html Msg
 view model =
@@ -173,9 +169,9 @@ view model =
       }
   in
     div
-      [ onMouseDown StartDrag
+      [ onMouseDownPos StartDrag
       , onMouseUp StopDrag
-      , onWithOptions "wheel" wheelOptions (Json.map Wheel <| wheelEventDecoder)
+      , onWithOptions "wheel" wheelOptions (Decode.map Wheel <| wheelEventDecoder)
       , style [ ("height", "100vh"), ("width", "100vw") ]
       ]
       [ span
@@ -214,12 +210,12 @@ fetchPerform : String -> Cmd Msg
 fetchPerform url =
   Http.send FetchGeoJson <| Http.get url decoder
 
-wheelEventDecoder : Json.Decoder WheelEvent
+wheelEventDecoder : Decode.Decoder WheelEvent
 wheelEventDecoder =
-  Json.map3 WheelEvent
-    (at ["deltaX"] Json.float)
-    (at ["deltaY"] Json.float)
-    (at ["deltaZ"] Json.float)
+  Decode.map3 WheelEvent
+    (at ["deltaX"] Decode.float)
+    (at ["deltaY"] Decode.float)
+    (at ["deltaZ"] Decode.float)
 
 movePolygonPosition : Model -> Model
 movePolygonPosition model =
@@ -276,3 +272,10 @@ calculateMaxRowCol : Int -> Int
 calculateMaxRowCol zoomLevel =
   if (zoomLevel == 0) then 0
   else (calculateMaxRowCol <| zoomLevel - 1) * 2 + 1
+
+
+decodeClickLocation : Decode.Decoder (Int, Int)
+decodeClickLocation =
+    Decode.map2 (,)
+      (Decode.at ["pageX"] Decode.int)
+      (Decode.at ["pageY"] Decode.int)
