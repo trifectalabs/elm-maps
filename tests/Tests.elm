@@ -47,7 +47,8 @@ all =
             in
               Expect.equal
                 (parsePolygonCoordinates geometry)
-                ([ [ coordinates1, coordinates2 ] ])
+                ([ [ normalizeCoordinate coordinates1
+                   , normalizeCoordinate coordinates2 ] ])
 
       , test "can parse polygon coordinates from geometry with multiple polygons" <|
           \() ->
@@ -64,7 +65,9 @@ all =
             in
               Expect.equal
                 (parsePolygonCoordinates geometry)
-                ([ [ coordinates1 ], [ coordinates2 ], [ coordinates3 ] ])
+                ([ [ normalizeCoordinate coordinates1 ]
+                 , [ normalizeCoordinate coordinates2 ]
+                 , [ normalizeCoordinate coordinates3 ] ])
 
       , test "can generate a single-polygon string for rendering from GeoJson" <|
           \() ->
@@ -87,7 +90,7 @@ all =
             in
               Expect.equal
                 (generatePolygonStrings testGeoJson)
-                [ "10.45,8.33 22.85,93.11 74.29,123.09" ]
+                [ "190.45,81.67 202.85,-3.1099999999999994 254.29000000000002,-33.09" ]
 
       , test "can generate a multi-polygon strings for rendering from GeoJson" <|
           \() ->
@@ -113,6 +116,7 @@ all =
             in
               Expect.equal
                 (generatePolygonStrings testGeoJson)
-                [ "10.45,8.33 22.85,93.11", "74.29,123.09 34.2,171.89" ]
+                [ "190.45,81.67 202.85,-3.1099999999999994"
+                ,"254.29000000000002,-33.09 214.2,-81.88999999999999" ]
       ]
     ]
